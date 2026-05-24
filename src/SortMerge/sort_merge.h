@@ -5,8 +5,8 @@
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
-#include "buffer_manager.h"
-#include "classes_aux.h"
+#include "../BufferManager/buffer_manager.h"
+#include "../classes_aux.h"
 
 using namespace std;
 

@@ -1,7 +1,7 @@
 #ifndef BUFFER_MANAGER_H
 #define BUFFER_MANAGER_H
 
-#include "classes_aux.h"
+#include "../classes_aux.h"
 
 class Buffer_Manager{
     private:
