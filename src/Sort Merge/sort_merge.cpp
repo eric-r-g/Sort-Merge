@@ -56,7 +56,18 @@ Tabela Sort_Merge::gerar_runs(Tabela& tabela_original, string col_ordenacao){
     return runs;
 }
 
-// o merge ficará com 1 frame de entrada para o A, 1 Frames de entrada para o B, 1 Frames de Saida 
+// juntas a colunas de ambos com exceção na tupla b da coluna idx_col
+Tupla Sort_Merge::juncao_tupla(Tupla& a, Tupla& b, int idx_col){
+    Tupla c;
+    for(int i = 0; i < a.cols.size(); i++) c.cols.push_back(a.cols[i]);
+    for(int i = 0; i < b.cols.size(); i++){
+        if(i == idx_col) continue;
+        c.cols.push_back(b.cols[i]);
+    }
+    return c;
+}
+
+// o merge ficará com 1 frame de entrada para o A, 1 Frames de entrada para o B, 1 Frames de Saida, 1 reserva 
 Tabela Sort_Merge::merge(Tabela& tabela_a, Tabela& tabela_b, string col_juncao){
     Tabela saida;
     int sz_a = tabela_a.qtd_pags, sz_b = tabela_b.qtd_pags;
@@ -65,7 +76,8 @@ Tabela Sort_Merge::merge(Tabela& tabela_a, Tabela& tabela_b, string col_juncao){
     int ts = 0;
     pair <int, int> pos_b = {0, 0}; // pg_b, tb
     int idx_b = buffer.carregar_para_memoria(tabela_b.pags[pos_b.first]);
-
+    int idx_col_a = tabela_a.esquema.nome_para_indice[col_juncao];
+    int idx_col_b = tabela_b.esquema.nome_para_indice[col_juncao];
 
     // para cada uma das tuplas de A, ele faz o processo
     for(int pg_a = 0; pg_a < sz_a; pg_a++){
@@ -78,13 +90,12 @@ Tabela Sort_Merge::merge(Tabela& tabela_a, Tabela& tabela_b, string col_juncao){
                 Tupla& tp_a = buffer.get_pagina(idx_a).tuplas[ta];
                 Tupla& tp_b = buffer.get_pagina(idx_b).tuplas[pos_b.second];
 
-                // TODO: alterar para a comparação correta
                 // Se for menor o A precisa avançar
-                if(tp_a < tp_b) 
+                if(stoi(tp_a.cols[idx_col_a]) < stoi(tp_b.cols[idx_col_b])) 
                     break;
-                
+
                 // Se for maior o B precisa avançar, o que pode gerar mudanças
-                else if(tp_a > tp_b){
+                else if(stoi(tp_a.cols[idx_col_a]) > stoi(tp_b.cols[idx_col_b])){
                     pos_b.second++;
                     if(pos_b.second >= buffer.get_pagina(idx_b).qtd_tuplas_ocup){
                         pos_b.second = 0;
@@ -102,11 +113,12 @@ Tabela Sort_Merge::merge(Tabela& tabela_a, Tabela& tabela_b, string col_juncao){
                     int temp_idx_b = idx_b;
                     Tupla& temp_tp_b = tp_b;
 
-                    while(tp_a == temp_tp_b){
-                        buffer.get_pagina(idx_saida).tuplas[ts++] = juncao(tp_a, temp_tp_b); // TODO: função para gerar nova tuplas
+                    while(stoi(tp_a.cols[idx_col_a]) == stoi(temp_tp_b.cols[idx_col_b])){
+                        buffer.get_pagina(idx_saida).tuplas[ts++] = juncao_tupla(tp_a, temp_tp_b, idx_col_b);
 
                         // guardar a pagina na tabela de saida
                         if(ts == 12){
+                            buffer.get_pagina(idx_saida).qtd_tuplas_ocup = ts;
                             saida.pags.push_back(buffer.get_pagina(idx_saida));
                             buffer.liberar_frame(idx_saida);
                             idx_saida = buffer.carregar_para_memoria(Pagina());
@@ -137,6 +149,7 @@ Tabela Sort_Merge::merge(Tabela& tabela_a, Tabela& tabela_b, string col_juncao){
     }
 
     if(ts != 0){
+        buffer.get_pagina(idx_saida).qtd_tuplas_ocup = ts;
         saida.pags.push_back(buffer.get_pagina(idx_saida));
         buffer.liberar_frame(idx_saida);
     }

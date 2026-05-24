@@ -13,6 +13,7 @@ using namespace std;
 class Sort_Merge{
     private:
         Buffer_Manager buffer;
+        Tupla juncao_tupla(Tupla& a, Tupla& b, int idx_col);
     public:
         Sort_Merge();
         Tabela gerar_runs(Tabela& tabela_original, string col_ordenacao);
