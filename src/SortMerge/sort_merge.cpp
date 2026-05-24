@@ -56,6 +56,141 @@ Tabela Sort_Merge::gerar_runs(Tabela& tabela_original, string col_ordenacao){
     return runs;
 }
 
+Tabela Sort_Merge::juntar_runs(Tabela& tabela_runs, string col_ordenacao){
+    //A ideia é pegar 2 runs e juntar elas em uma run maior até sobrar só uma
+    
+    if(tabela_runs.qtd_pags <= 5) return tabela_runs;
+
+    //acessa o hash para saber o indice da coluna
+    int idx_col = tabela_runs.esquema.nome_para_indice[col_ordenacao];
+
+    //cada run tem no maximo 5 paginas inicialmente
+    int tamanho_run_atual = 5;
+    Tabela atual = tabela_runs;
+
+    //fica em loop ate cobrir a tabela inteira
+    while(tamanho_run_atual < atual.qtd_pags){
+        Tabela aux;
+        aux.esquema = atual.esquema;
+
+        //percorrer de 2 em 2
+        for(int i = 0 ; i < atual.qtd_pags ; i += 2*tamanho_run_atual){
+            //pegar o comeco e fim de cada run
+            int L1 = i, R1 = min(i + tamanho_run_atual, atual.qtd_pags);
+            int L2 = R1, R2 = min(i + 2*tamanho_run_atual, atual.qtd_pags);
+
+            if(L2 == atual.qtd_pags){ //nao tem uma segunda run, so copia as paginas
+                for(int j = L1 ; j < R1 ; j++){
+                    aux.pags.push_back(atual.pags[j]);
+                    aux.qtd_pags++;
+                }
+                break;
+            }
+            
+            //alocar no buffer as 2 runs e a pagina de saida
+            int idx_buf_r1 = buffer.carregar_para_memoria(atual.pags[L1]);
+            int idx_buf_r2 = buffer.carregar_para_memoria(atual.pags[L2]);
+            int idx_buf_saida = buffer.carregar_para_memoria(Pagina());
+            int t_r1 = 0, t_r2 = 0, t_saida = 0;
+
+            while(L1 < R1 && L2 < R2){
+                Tupla& tp1 = buffer.get_pagina(idx_buf_r1).tuplas[t_r1];
+                Tupla& tp2 = buffer.get_pagina(idx_buf_r2).tuplas[t_r2];
+                
+                //compara as duas
+                int val1 = stoi(tp1.cols[idx_col]), val2 = stoi(tp2.cols[idx_col]);
+                if(val1 <= val2){
+                    //atualiza a pagina de saida
+                    buffer.get_pagina(idx_buf_saida).tuplas[t_saida] = tp1;
+                    t_saida++; t_r1++;
+                    //se percorreu todas as tuplas
+                    if(t_r1 == buffer.get_pagina(idx_buf_r1).qtd_tuplas_ocup){
+                        t_r1 = 0; L1++;
+                        buffer.liberar_frame(idx_buf_r1);
+                        //atualizar o indice do buffer
+                        if(L1 < R1) idx_buf_r1 = buffer.carregar_para_memoria(atual.pags[L1]);
+                    }
+                }
+                else{ //o mesmo processo so que com a outra run
+                    buffer.get_pagina(idx_buf_saida).tuplas[t_saida] = tp2;
+                    t_saida++; t_r2++;
+                    if(t_r2 == buffer.get_pagina(idx_buf_r2).qtd_tuplas_ocup){
+                        t_r2 = 0; L2++;
+                        buffer.liberar_frame(idx_buf_r2);
+                        if(L2 < R2) idx_buf_r2 = buffer.carregar_para_memoria(atual.pags[L2]);
+                    }
+                }
+
+                //se a pagina de saida encher, grava no disco
+                if(t_saida == 12){
+                    buffer.get_pagina(idx_buf_saida).qtd_tuplas_ocup = t_saida;
+                    aux.pags.push_back(buffer.get_pagina(idx_buf_saida));
+                    aux.qtd_pags++;
+
+                    buffer.liberar_frame(idx_buf_saida);
+                    idx_buf_saida = buffer.carregar_para_memoria(Pagina());
+                    t_saida = 0;
+                }
+            }
+
+            //copiar as tuplas da run 1 se ainda tiver sobrando
+            while(L1 < R1){
+                buffer.get_pagina(idx_buf_saida).tuplas[t_saida] = buffer.get_pagina(idx_buf_r1).tuplas[t_r1];
+                t_saida++; t_r1++;
+                if(t_r1 == buffer.get_pagina(idx_buf_r1).qtd_tuplas_ocup){
+                    t_r1 = 0; L1++;
+                    buffer.liberar_frame(idx_buf_r1);
+                    if(L1 < R1) idx_buf_r1 = buffer.carregar_para_memoria(atual.pags[L1]);
+                }
+
+                if(t_saida == 12){
+                    buffer.get_pagina(idx_buf_saida).qtd_tuplas_ocup = t_saida;
+                    aux.pags.push_back(buffer.get_pagina(idx_buf_saida));
+                    aux.qtd_pags++;
+
+                    buffer.liberar_frame(idx_buf_saida);
+                    idx_buf_saida = buffer.carregar_para_memoria(Pagina());
+                    t_saida = 0;
+                }
+            }
+
+            //copiar da run 2 se ainda tiver sobrando
+            while(L2 < R2){
+                buffer.get_pagina(idx_buf_saida).tuplas[t_saida] = buffer.get_pagina(idx_buf_r2).tuplas[t_r2];
+                t_saida++; t_r2++;
+                if(t_r2 == buffer.get_pagina(idx_buf_r2).qtd_tuplas_ocup){
+                    t_r2 = 0; L2++;
+                    buffer.liberar_frame(idx_buf_r2);
+                    if(L2 < R2) idx_buf_r2 = buffer.carregar_para_memoria(atual.pags[L2]);
+                }
+
+                if(t_saida == 12){
+                    buffer.get_pagina(idx_buf_saida).qtd_tuplas_ocup = t_saida;
+                    aux.pags.push_back(buffer.get_pagina(idx_buf_saida));
+                    aux.qtd_pags++;
+
+                    buffer.liberar_frame(idx_buf_saida);
+                    idx_buf_saida = buffer.carregar_para_memoria(Pagina());
+                    t_saida = 0;
+                }
+            }
+
+            //grava a ultima pagina se tiver algo nela
+            if(t_saida > 0){
+                buffer.get_pagina(idx_buf_saida).qtd_tuplas_ocup = t_saida;
+                aux.pags.push_back(buffer.get_pagina(idx_buf_saida));
+                aux.qtd_pags++;
+                buffer.liberar_frame(idx_buf_saida);
+            }
+        }
+
+        //atualiza as informacoes (atualiza a atual e runs duplicam de tamanho)
+        atual = aux;
+        tamanho_run_atual *= 2;
+    }
+    return atual;
+}
+
 // juntas a colunas de ambos com exceção na tupla b da coluna idx_col
 Tupla Sort_Merge::juncao_tupla(Tupla& a, Tupla& b, int idx_col){
     Tupla c;
