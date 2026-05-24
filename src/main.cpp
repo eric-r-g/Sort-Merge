@@ -61,28 +61,53 @@ Tabela carregar_csv(string& arquivo){
     return saida;
 }   
 
+void criar_csv(Tabela& saida){
+
+}
+
 int main(){
-    string tname1, tname2, col1, col2;
+    string tname1, tname2, colA, colB;
+
     cout << "---------------------------------------------\n";
-    cout << "Seja bem vindo!! Digite o nome da primeira \n";
-    cout << "tabela que será utilizada: ";
-    cin >> tname1;
-    cout << "---------------------------------------------\n";
-    cout << "Digite agora o nome da segunda \n";
-    cout << "tabela que será utilizada: ";
-    cin >> tname2;
-    cout << "---------------------------------------------\n";
-    cout << "Digite agora o nome da coluna que será \n";
-    cout << "utilizada para juncao na tabela 1: ";
-    cin >> col1;
-    cout << "---------------------------------------------\n";
-    cout << "Digite agora o nome da coluna que será \n";
-    cout << "utilizada para juncao na tabela 1: ";
-    cin >> col2;
-    cout << "---------------------------------------------\n";
+    cout << "Seja bem vindo!! Gostaria de\n";
+    cout << "fazer o teste basico? [S/N]: ";
+    char modo; cin >> modo;
+
+    if(modo == 'S'){
+        tname1 = "grapes.csv";
+        tname2 = "wines.csv";
+        colA = "chave_primaria";
+        colB = "chave_estrangeira";
+    } else {
+        cout << "---------------------------------------------\n";
+        cout << "Digite o nome da primeira \n";
+        cout << "tabela que sera utilizada: ";
+        cin >> tname1;
+        cout << "---------------------------------------------\n";
+        cout << "Digite agora o nome da segunda \n";
+        cout << "tabela que sera utilizada: ";
+        cin >> tname2;
+        cout << "---------------------------------------------\n";
+        cout << "Digite agora o nome da coluna que sera \n";
+        cout << "utilizada para juncao na tabela 1: ";
+        cin >> colA;
+        cout << "---------------------------------------------\n";
+        cout << "Digite agora o nome da coluna que sera \n";
+        cout << "utilizada para juncao na tabela 2: ";
+        cin >> colB;
+        cout << "---------------------------------------------\n";
+    }
 
     Tabela A = carregar_csv(tname1);
     if(erro) return 1;
     Tabela B = carregar_csv(tname2);
     if(erro) return 1;
+
+    Sort_Merge SMJ();
+
+    //Tabela A_runs = SMJ.gerar_runs(A, colA);
+    //Tabela B_runs = SMJ.gerar_runs(B, colB);
+    //Tabela A_ord = SMJ.juntar_runs(A_runs, colA);
+    //Tabela B_ord = SMJ.juntar_runs(B_runs, colB);
+    //Tabela C = SMJ.merge(A_ord, B_ord, colA, colB);
 }

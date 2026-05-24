@@ -12,7 +12,7 @@ class Sort_Merge{
         Sort_Merge();
         Tabela gerar_runs(Tabela& tabela_original, string col_ordenacao);
         Tabela juntar_runs(Tabela& tabela_runs, string col_ordenacao);
-        Tabela merge(Tabela& tabela_a, Tabela& tabela_b, string col_juncao);
+        Tabela merge(Tabela& tabela_a, Tabela& tabela_b, string col_juncaoA, string col_juncaoB);
 };
 
 #endif
