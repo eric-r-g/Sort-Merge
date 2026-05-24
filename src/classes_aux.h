@@ -1,11 +1,10 @@
-#ifndef SORT_MERGE_H
-#define SORT_MERGE_H
+#ifndef CLASSES_AUX_H
+#define CLASSES_AUX_H
 
 #include <iostream>
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
-#include "buffer_manager.h"
 
 using namespace std;
 
@@ -27,14 +26,6 @@ struct Tabela{
     vector<Pagina> pags;
     int qtd_pags;
     Esquema esquema;
-};
-
-class Sort_Merge{
-    private:
-        Buffer_Manager buffer;
-    public:
-        Sort_Merge();
-        Tabela gerar_runs(Tabela& tabela_original, string col_ordenacao);
 };
 
 #endif
