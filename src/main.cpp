@@ -4,7 +4,25 @@
 #include "SortMerge/sort_merge.h"
 using namespace std;
 
-bool erro = false;
+// recebe uma linha do csv e já separa na colunas devidas;
+vector <string> separa_linha(string& s){
+    vector <string> saida;
+    bool aspa = false;
+    string col_atual = "";
+
+    for(char c : s){
+        if(c == ',' && !aspa){
+            saida.push_back(col_atual);
+            col_atual = "";
+        }
+        else if (c == '\"')
+            aspa = !aspa;
+        else 
+            col_atual += c;
+    }
+
+    return saida;
+}
 
 Tabela carregar_csv(string& arquivo){
     Tabela saida;
@@ -13,7 +31,6 @@ Tabela carregar_csv(string& arquivo){
     if(!entrada.is_open()){
         cout << "Houve um erro ao abrir o arquivo: " + arquivo + "\n";
         cout << "---------------------------------------------\n";
-        erro = true;
         return saida;
     }
 
@@ -23,8 +40,8 @@ Tabela carregar_csv(string& arquivo){
     // lida com cabeçalho
     getline(entrada, linha_atual); 
     int cont = 0;
-    stringstream cabecalho(linha_atual);
-    while(getline(cabecalho, coluna, ',')){
+    vector <string> cabecalho = separa_linha(linha_atual);
+    for(string& coluna : cabecalho){
         if (!coluna.empty() && coluna.back() == '\r') {
             coluna.pop_back(); 
         }
@@ -34,9 +51,9 @@ Tabela carregar_csv(string& arquivo){
     Pagina p; int pos_tupla = 0; // para organizar em paginas
     while(getline(entrada, linha_atual)){
         // recebe as colunas
-        stringstream ss(linha_atual);
+        vector <string> ss = separa_linha(linha_atual);
         Tupla t;
-        while(getline(ss, coluna, ',')){
+        for(string& coluna : ss){
             if (!coluna.empty() && coluna.back() == '\r') {
                 coluna.pop_back(); 
             }
@@ -61,8 +78,24 @@ Tabela carregar_csv(string& arquivo){
     return saida;
 }   
 
-void criar_csv(Tabela& saida){
+void criar_csv(Tabela& t){
+    ofstream saida("saida.csv");
 
+    if(!saida.is_open()){
+        cout << "Houve um erro ao criar o arquivo de saida\n";
+        cout << "---------------------------------------------\n";
+        return;
+    }
+
+    int lim = t.esquema.qtd_cols;
+    for(Pagina &p : t.pags){
+        for(int i = 0; i < p.qtd_tuplas_ocup; i++){
+            saida << "\"" << p.tuplas[i].cols[0] << "\"";
+            for(int c = 1; c < lim; c++)
+                saida << ',' << "\"" << p.tuplas[i].cols[c] << "\"";
+            saida << "\n";
+        }
+    }
 }
 
 int main(){
@@ -99,15 +132,19 @@ int main(){
     }
 
     Tabela A = carregar_csv(tname1);
-    if(erro) return 1;
+    if(A.qtd_pags == 0) return 1;
     Tabela B = carregar_csv(tname2);
-    if(erro) return 1;
+    if(B.qtd_pags == 0) return 1;
+    
+    Sort_Merge SMJ;
 
-    Sort_Merge SMJ();
-
-    //Tabela A_runs = SMJ.gerar_runs(A, colA);
-    //Tabela B_runs = SMJ.gerar_runs(B, colB);
-    //Tabela A_ord = SMJ.juntar_runs(A_runs, colA);
-    //Tabela B_ord = SMJ.juntar_runs(B_runs, colB);
-    //Tabela C = SMJ.merge(A_ord, B_ord, colA, colB);
+    Tabela A_runs = SMJ.gerar_runs(A, colA);
+    Tabela B_runs = SMJ.gerar_runs(B, colB);
+    Tabela A_ord = SMJ.juntar_runs(A_runs, colA);
+    Tabela B_ord = SMJ.juntar_runs(B_runs, colB);
+    Tabela C = SMJ.merge(A_ord, B_ord, colA, colB);
+    cout << "Juncao concluida com sucesso! \n";
+    cout << "---------------------------------------------\n";
+    
+    criar_csv(C);
 }

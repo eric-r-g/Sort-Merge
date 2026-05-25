@@ -180,8 +180,8 @@ Tabela Sort_Merge::juntar_runs(Tabela& tabela_runs, string col_ordenacao){
                 buffer.get_pagina(idx_buf_saida).qtd_tuplas_ocup = t_saida;
                 aux.pags.push_back(buffer.get_pagina(idx_buf_saida));
                 aux.qtd_pags++;
-                buffer.liberar_frame(idx_buf_saida);
             }
+            buffer.liberar_frame(idx_buf_saida);
         }
 
         //atualiza as informacoes (atualiza a atual e runs duplicam de tamanho)
@@ -205,8 +205,9 @@ Tupla Sort_Merge::juncao_tupla(Tupla& a, Tupla& b, int idx_col){
 // o merge ficará com 1 frame de entrada para o A, 1 Frames de entrada para o B, 1 Frames de Saida, 1 reserva 
 Tabela Sort_Merge::merge(Tabela& tabela_a, Tabela& tabela_b, string col_juncaoA, string col_juncaoB){
     Tabela saida;
-    int sz_a = tabela_a.qtd_pags, sz_b = tabela_b.qtd_pags;
+    saida.esquema.qtd_cols = tabela_a.esquema.qtd_cols + tabela_b.esquema.qtd_cols - 1;
 
+    int sz_a = tabela_a.qtd_pags, sz_b = tabela_b.qtd_pags;
     int idx_saida = buffer.carregar_para_memoria(Pagina());
     int ts = 0;
     pair <int, int> pos_b = {0, 0}; // pg_b, tb
